@@ -145,3 +145,6 @@ export const MIRROR_VOICE_HOTSPOTS: readonly MirrorVoiceHotspot[] = [
 ] as const;
 
 export const CENTRAL_PSYCH_HOTSPOT_ID = "C1";
+
+/** Primed on first tap inside the room (Safari / mobile unlock). */
+export const MIRROR_AUDIO_UNLOCK_PRIME_SRC = mirrorVoiceUrl(MIRROR_ROOM_VOICE.IT_WAS_ALWAYS_YOU_2);

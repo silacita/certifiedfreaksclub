@@ -1,10 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 import {
   AMBIENT_SRC,
   CENTRAL_PSYCH_HOTSPOT_ID,
+  MIRROR_AUDIO_UNLOCK_PRIME_SRC,
   MIRROR_VOICE_HOTSPOTS,
   type MirrorVoiceHotspot,
 } from "../lib/mirrorRoomAudio";
@@ -23,6 +31,9 @@ const DISCOVER_START_MS = 36000;
 const DISCOVER_BRIGHTEN_MS = 22000;
 const DISCOVER_TEXT_PAUSE_MS = 1800;
 
+const SILENT_UNLOCK_SRC =
+  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+
 function clearTimeouts(ref: { current: ReturnType<typeof setTimeout>[] }) {
   for (const t of ref.current) {
     clearTimeout(t);
@@ -36,8 +47,10 @@ export function MirrorRoom({ visible, onClose }: Props) {
   }, [onClose]);
 
   const [hoveredHotspotId, setHoveredHotspotId] = useState<string | null>(null);
+  const [audioReady, setAudioReady] = useState(false);
   const playedWhileInsideRef = useRef<Set<string>>(new Set());
   const voicePlayGenRef = useRef(0);
+  const unlockPromiseRef = useRef<Promise<boolean> | null>(null);
 
   const glowFrame = useMemo<MirrorLiftId | null>(() => {
     if (!hoveredHotspotId) return null;
@@ -73,13 +86,76 @@ export function MirrorRoom({ visible, onClose }: Props) {
   const ensureVoiceEl = useCallback((): HTMLAudioElement => {
     if (!voiceRef.current) {
       const v = new Audio();
-      v.preload = "none";
+      v.preload = "auto";
       v.loop = false;
       v.setAttribute("playsinline", "");
       v.setAttribute("webkit-playsinline", "");
       voiceRef.current = v;
     }
     return voiceRef.current;
+  }, []);
+
+  const ensureAudioUnlocked = useCallback(async (): Promise<boolean> => {
+    if (voiceUnlockedRef.current) {
+      setAudioReady(true);
+      return true;
+    }
+    if (unlockPromiseRef.current) {
+      return unlockPromiseRef.current;
+    }
+
+    const run = async (): Promise<boolean> => {
+      const v = ensureVoiceEl();
+      const prevVol = v.volume;
+
+      try {
+        v.pause();
+        v.volume = 0.001;
+        v.src = SILENT_UNLOCK_SRC;
+        await v.play();
+        v.pause();
+        v.currentTime = 0;
+
+        v.src = MIRROR_AUDIO_UNLOCK_PRIME_SRC;
+        v.volume = 0.02;
+        await v.play();
+        v.pause();
+        v.currentTime = 0;
+        v.removeAttribute("src");
+        v.load();
+        v.volume = prevVol;
+
+        voiceUnlockedRef.current = true;
+        setAudioReady(true);
+        return true;
+      } catch {
+        v.volume = prevVol;
+        return false;
+      }
+    };
+
+    unlockPromiseRef.current = run().finally(() => {
+      unlockPromiseRef.current = null;
+    });
+    return unlockPromiseRef.current;
+  }, [ensureVoiceEl]);
+
+  const tryStartAmbient = useCallback(() => {
+    if (!voiceUnlockedRef.current || ambientStartedRef.current) return;
+    ambientStartedRef.current = true;
+
+    const a = new Audio(AMBIENT_SRC);
+    a.loop = false;
+    a.preload = "none";
+    a.volume = 0.14;
+    a.setAttribute("playsinline", "");
+    a.setAttribute("webkit-playsinline", "");
+    ambientRef.current = a;
+
+    void a.play().catch(() => {
+      ambientStartedRef.current = false;
+      ambientRef.current = null;
+    });
   }, []);
 
   const playMirrorClip = useCallback(
@@ -159,45 +235,12 @@ export function MirrorRoom({ visible, onClose }: Props) {
   onCentralMirrorHitEnterRef.current = onCentralMirrorHitEnter;
   onCentralMirrorHitLeaveRef.current = onCentralMirrorHitLeave;
 
-  const unlockMirrorVoice = useCallback(async () => {
-    if (voiceUnlockedRef.current) return;
-    const v = ensureVoiceEl();
-    const prevVol = v.volume;
-    v.volume = 0.001;
-    v.src =
-      "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
-    try {
-      await v.play();
-      v.pause();
-      v.removeAttribute("src");
-      v.load();
-      v.volume = prevVol;
-      voiceUnlockedRef.current = true;
-    } catch {
-      v.volume = prevVol;
-    }
-  }, [ensureVoiceEl]);
+  const activateVoiceHotspot = useCallback(
+    async (h: MirrorVoiceHotspot) => {
+      const ok = await ensureAudioUnlocked();
+      if (!ok) return;
 
-  const tryStartAmbientOnInteraction = useCallback(() => {
-    void unlockMirrorVoice();
-    if (ambientStartedRef.current) return;
-    ambientStartedRef.current = true;
-
-    const a = new Audio(AMBIENT_SRC);
-    a.loop = false;
-    a.preload = "none";
-    a.volume = 0.14;
-    ambientRef.current = a;
-
-    void a.play().catch(() => {
-      ambientStartedRef.current = false;
-      ambientRef.current = null;
-    });
-  }, [unlockMirrorVoice]);
-
-  const onVoiceHotspotEnter = useCallback(
-    (h: MirrorVoiceHotspot) => {
-      tryStartAmbientOnInteraction();
+      tryStartAmbient();
       setHoveredHotspotId(h.id);
 
       if (playedWhileInsideRef.current.has(h.id)) {
@@ -207,7 +250,18 @@ export function MirrorRoom({ visible, onClose }: Props) {
 
       void playMirrorClip(h.id, h.audioPath);
     },
-    [playMirrorClip, tryStartAmbientOnInteraction],
+    [ensureAudioUnlocked, playMirrorClip, tryStartAmbient],
+  );
+
+  const onListenGatePointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      void (async () => {
+        const ok = await ensureAudioUnlocked();
+        if (ok) tryStartAmbient();
+      })();
+    },
+    [ensureAudioUnlocked, tryStartAmbient],
   );
 
   const onVoiceHotspotLeave = useCallback((h: MirrorVoiceHotspot) => {
@@ -241,8 +295,10 @@ export function MirrorRoom({ visible, onClose }: Props) {
       playedWhileInsideRef.current.clear();
       voicePlayGenRef.current += 1;
       voiceUnlockedRef.current = false;
+      unlockPromiseRef.current = null;
       ambientStartedRef.current = false;
       hoverCountRef.current = 0;
+      setAudioReady(false);
       setHoverCount(0);
       setHoveredHotspotId(null);
       setCurrentMessage(null);
@@ -275,15 +331,14 @@ export function MirrorRoom({ visible, onClose }: Props) {
     `mir-psych${reduceMotion ? " mir-psych--reduce-motion" : ""}` +
     `${discoveryAwake ? " mir-psych--discovery-awake" : ""}`;
 
+  const showListenGate = visible && !audioReady;
+
   return (
     <div
       className={`cfc-mirror-root ${psychRootClass} fixed inset-0 z-[40] overflow-hidden transition-opacity duration-[2600ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
         visible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
       }`}
       aria-hidden={!visible}
-      onPointerDown={() => {
-        tryStartAmbientOnInteraction();
-      }}
     >
       <div className="mir-psych__photo-deep">
         <div className="mir-env__photo-bg mir-psych__photo-base" aria-hidden />
@@ -354,7 +409,7 @@ export function MirrorRoom({ visible, onClose }: Props) {
 
       <div className="mir-psych__veil-drift" aria-hidden />
 
-      <div className="mir-psych__mirror-audio-hits" aria-hidden>
+      <div className="mir-psych__mirror-audio-hits">
         {MIRROR_VOICE_HOTSPOTS.map((h) => (
           <div
             key={h.id}
@@ -365,8 +420,12 @@ export function MirrorRoom({ visible, onClose }: Props) {
               width: `${h.layout.widthPct}%`,
               height: `${h.layout.heightPct}%`,
             }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              void activateVoiceHotspot(h);
+            }}
             onPointerEnter={() => {
-              onVoiceHotspotEnter(h);
+              void activateVoiceHotspot(h);
             }}
             onPointerLeave={() => {
               onVoiceHotspotLeave(h);
@@ -374,6 +433,17 @@ export function MirrorRoom({ visible, onClose }: Props) {
           />
         ))}
       </div>
+
+      {showListenGate ? (
+        <button
+          type="button"
+          className="mir-psych__listen-gate"
+          aria-label="Touch the room to listen"
+          onPointerDown={onListenGatePointerDown}
+        >
+          <span className="mir-psych__listen-gate__hint">touch the room to listen</span>
+        </button>
+      ) : null}
 
       {currentMessage !== null ? (
         <p
