@@ -1415,6 +1415,43 @@ body {
   touch-action: manipulation;
 }
 
+/* First tap unlock — invisible full-room layer until audio is primed */
+.mir-psych__listen-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: inherit;
+  opacity: 1;
+  transition: opacity 1.4s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.mir-psych__listen-gate--dismissed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mir-psych__listen-gate__hint {
+  pointer-events: none;
+  max-width: 14rem;
+  padding: 0 1rem;
+  text-align: center;
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 0.8rem;
+  font-style: italic;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--color-cfc-off-white) 38%, transparent);
+}
+
 /* Psychological copy — small, no chrome */
 .mir-psych__psych-text {
   position: absolute;
