@@ -1415,27 +1415,6 @@ body {
   touch-action: manipulation;
 }
 
-/* Temporary Mirror Room audio debug — remove after production fix confirmed */
-.mir-psych__debug-test-spot {
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed rgba(239, 68, 68, 0.55);
-  background: rgba(127, 29, 29, 0.22);
-  color: rgba(254, 202, 202, 0.75);
-  font-family: ui-monospace, monospace;
-  font-size: 0.55rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  pointer-events: auto;
-  cursor: pointer;
-}
-
-.mir-psych__audio-debug {
-  pointer-events: none;
-}
-
 /* Psychological copy — small, no chrome */
 .mir-psych__psych-text {
   position: absolute;

@@ -145,8 +145,3 @@ export const MIRROR_VOICE_HOTSPOTS: readonly MirrorVoiceHotspot[] = [
 ] as const;
 
 export const CENTRAL_PSYCH_HOTSPOT_ID = "C1";
-
-/** Known-good clip for debug test hotspot (non–wake-up). */
-export const MIRROR_DEBUG_TEST_SRC = mirrorVoiceUrl(MIRROR_ROOM_VOICE.YOU_WERENT_LOOKING);
-
-export const MIRROR_DEBUG_PROBE_SRC = mirrorVoiceUrl(MIRROR_ROOM_VOICE.IT_WAS_ALWAYS_YOU_2);
