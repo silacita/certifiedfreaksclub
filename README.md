@@ -59,3 +59,9 @@ python3 scripts/generate-experience-audio.py
 ## Deploy
 
 Compatible with [Vercel](https://vercel.com) and any Node host that runs `next build` + `next start`. Ensure `public/audio` is included in the deployment artifact (default for this repo).
+
+## Publish to GitHub (simple)
+
+This project is already set up for Git. **Do not** drag `node_modules` or `.next` into GitHub — they are excluded automatically.
+
+Easiest method: install [GitHub Desktop](https://desktop.github.com), sign in, choose **File → Add Local Repository**, select this folder, then click **Publish repository** (or **Push origin** if the remote already exists).

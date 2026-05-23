@@ -1,6 +1,8 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Folders below are NEVER uploaded to GitHub (too large or auto-generated).
+# Your real site code, images, and audio in public/ ARE uploaded.
 
-# dependencies
+# dependencies (install locally with npm install)
+node_modules/
 /node_modules
 /.pnp
 .pnp.*
@@ -13,8 +15,10 @@
 # testing
 /coverage
 
-# next.js
+# next.js build cache (recreated when you run npm run dev or npm run build)
+.next/
 /.next/
+out/
 /out/
 .turbo
 
