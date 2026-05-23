@@ -5,9 +5,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AMBIENT_SRC,
   CENTRAL_PSYCH_HOTSPOT_ID,
+  MIRROR_DEBUG_PROBE_SRC,
+  MIRROR_DEBUG_TEST_SRC,
   MIRROR_VOICE_HOTSPOTS,
   type MirrorVoiceHotspot,
 } from "../lib/mirrorRoomAudio";
+
+/** Temporary — remove after Mirror Room audio is confirmed on production. */
+const MIRROR_AUDIO_DEBUG = true;
 
 type Props = {
   visible: boolean;
@@ -15,6 +20,15 @@ type Props = {
 };
 
 type MirrorLiftId = "left" | "center" | "right";
+
+type AudioDebugLine = {
+  at: string;
+  hotspotId: string;
+  event: string;
+  src: string;
+  playResult: string;
+  error: string;
+};
 
 const INTRO_DELAY_MS = 1800;
 const LONG_DWELL_MS = 5000;
@@ -30,15 +44,39 @@ function clearTimeouts(ref: { current: ReturnType<typeof setTimeout>[] }) {
   ref.current = [];
 }
 
+function logMirrorAudio(message: string, detail?: Record<string, unknown>) {
+  if (!MIRROR_AUDIO_DEBUG) return;
+  if (detail) {
+    console.log(`[MirrorRoom audio] ${message}`, detail);
+  } else {
+    console.log(`[MirrorRoom audio] ${message}`);
+  }
+}
+
 export function MirrorRoom({ visible, onClose }: Props) {
   const onBack = useCallback(() => {
     onClose();
   }, [onClose]);
 
   const [hoveredHotspotId, setHoveredHotspotId] = useState<string | null>(null);
-  /** Per-hotspot: voice already fired for current pointer dwell (cleared on leave). */
   const playedWhileInsideRef = useRef<Set<string>>(new Set());
   const voicePlayGenRef = useRef(0);
+
+  const [debugLines, setDebugLines] = useState<AudioDebugLine[]>([]);
+  const [debugProbe, setDebugProbe] = useState("not run");
+  const [debugUnlock, setDebugUnlock] = useState("locked");
+  const [debugRoomState, setDebugRoomState] = useState("hidden");
+
+  const pushDebug = useCallback((line: Omit<AudioDebugLine, "at">) => {
+    if (!MIRROR_AUDIO_DEBUG) return;
+    const entry: AudioDebugLine = { ...line, at: new Date().toISOString().slice(11, 23) };
+    setDebugLines((prev) => [entry, ...prev].slice(0, 8));
+    logMirrorAudio(`${line.event} · ${line.hotspotId}`, {
+      src: line.src,
+      playResult: line.playResult,
+      error: line.error,
+    });
+  }, []);
 
   const glowFrame = useMemo<MirrorLiftId | null>(() => {
     if (!hoveredHotspotId) return null;
@@ -61,6 +99,7 @@ export function MirrorRoom({ visible, onClose }: Props) {
   const ambientRef = useRef<HTMLAudioElement | null>(null);
   const ambientStartedRef = useRef(false);
   const voiceRef = useRef<HTMLAudioElement | null>(null);
+  const voiceUnlockedRef = useRef(false);
 
   const clearEngineTimers = useCallback(() => {
     clearTimeouts(engineTimersRef);
@@ -81,6 +120,87 @@ export function MirrorRoom({ visible, onClose }: Props) {
     }
     return voiceRef.current;
   }, []);
+
+  const probeAudioFile = useCallback(async (src: string) => {
+    try {
+      const res = await fetch(src, { method: "HEAD", cache: "no-store" });
+      const result = `HEAD ${src} → ${res.status} ${res.statusText}`;
+      setDebugProbe(result);
+      logMirrorAudio("file probe", { result });
+      return res.ok;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const result = `HEAD ${src} → FAILED (${msg})`;
+      setDebugProbe(result);
+      logMirrorAudio("file probe failed", { result });
+      return false;
+    }
+  }, []);
+
+  const playMirrorClip = useCallback(
+    async (hotspotId: string, src: string, opts?: { skipPsych?: boolean }) => {
+      pushDebug({
+        hotspotId,
+        event: "pointer enter / tap",
+        src,
+        playResult: "attempting…",
+        error: "",
+      });
+
+      const v = ensureVoiceEl();
+      const gen = ++voicePlayGenRef.current;
+      v.pause();
+      v.currentTime = 0;
+      v.loop = false;
+      v.volume = 1;
+      v.src = src;
+
+      const onError = () => {
+        if (voicePlayGenRef.current !== gen) return;
+        const code = v.error?.code ?? "unknown";
+        const msg = v.error?.message ?? "MediaElement error event";
+        pushDebug({
+          hotspotId,
+          event: "audio error",
+          src,
+          playResult: "FAILED (load/decode)",
+          error: `${code}: ${msg}`,
+        });
+      };
+
+      v.addEventListener("error", onError, { once: true });
+
+      try {
+        await v.play();
+        if (voicePlayGenRef.current !== gen) return;
+        pushDebug({
+          hotspotId,
+          event: "audio.play()",
+          src,
+          playResult: "SUCCESS",
+          error: "",
+        });
+      } catch (e) {
+        if (voicePlayGenRef.current !== gen) return;
+        const msg = e instanceof Error ? e.message : String(e);
+        pushDebug({
+          hotspotId,
+          event: "audio.play()",
+          src,
+          playResult: "FAILED (play rejected)",
+          error: msg,
+        });
+        playedWhileInsideRef.current.delete(hotspotId);
+      } finally {
+        v.removeEventListener("error", onError);
+      }
+
+      if (!opts?.skipPsych && hotspotId === CENTRAL_PSYCH_HOTSPOT_ID) {
+        onCentralMirrorHitEnterRef.current();
+      }
+    },
+    [ensureVoiceEl, pushDebug],
+  );
 
   const onCentralMirrorHitEnter = useCallback(() => {
     clearEngineTimers();
@@ -125,7 +245,37 @@ export function MirrorRoom({ visible, onClose }: Props) {
   onCentralMirrorHitEnterRef.current = onCentralMirrorHitEnter;
   onCentralMirrorHitLeaveRef.current = onCentralMirrorHitLeave;
 
+  const unlockMirrorVoice = useCallback(async () => {
+    if (voiceUnlockedRef.current) {
+      setDebugUnlock("already unlocked");
+      return true;
+    }
+    const v = ensureVoiceEl();
+    const prevVol = v.volume;
+    v.volume = 0.001;
+    v.src =
+      "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+    try {
+      await v.play();
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+      v.volume = prevVol;
+      voiceUnlockedRef.current = true;
+      setDebugUnlock("SUCCESS (silent unlock played)");
+      logMirrorAudio("voice unlock success");
+      return true;
+    } catch (e) {
+      v.volume = prevVol;
+      const msg = e instanceof Error ? e.message : String(e);
+      setDebugUnlock(`FAILED (${msg})`);
+      logMirrorAudio("voice unlock failed", { error: msg });
+      return false;
+    }
+  }, [ensureVoiceEl]);
+
   const tryStartAmbientOnInteraction = useCallback(() => {
+    void unlockMirrorVoice();
     if (ambientStartedRef.current) return;
     ambientStartedRef.current = true;
 
@@ -139,7 +289,7 @@ export function MirrorRoom({ visible, onClose }: Props) {
       ambientStartedRef.current = false;
       ambientRef.current = null;
     });
-  }, []);
+  }, [unlockMirrorVoice]);
 
   const onVoiceHotspotEnter = useCallback(
     (h: MirrorVoiceHotspot) => {
@@ -147,41 +297,58 @@ export function MirrorRoom({ visible, onClose }: Props) {
       setHoveredHotspotId(h.id);
 
       if (playedWhileInsideRef.current.has(h.id)) {
+        pushDebug({
+          hotspotId: h.id,
+          event: "pointer enter (skipped)",
+          src: h.audioPath,
+          playResult: "skipped — already played this dwell",
+          error: "",
+        });
         return;
       }
       playedWhileInsideRef.current.add(h.id);
 
-      if (h.id === CENTRAL_PSYCH_HOTSPOT_ID) {
-        onCentralMirrorHitEnterRef.current();
-      }
-
-      const v = ensureVoiceEl();
-      const gen = ++voicePlayGenRef.current;
-      v.pause();
-      v.currentTime = 0;
-      v.loop = false;
-      v.src = h.audioPath;
-
-      void v.play().catch(() => {
-        if (voicePlayGenRef.current === gen) {
-          playedWhileInsideRef.current.delete(h.id);
-        }
-      });
+      void playMirrorClip(h.id, h.audioPath);
     },
-    [ensureVoiceEl, tryStartAmbientOnInteraction],
+    [playMirrorClip, pushDebug, tryStartAmbientOnInteraction],
   );
 
-  const onVoiceHotspotLeave = useCallback((h: MirrorVoiceHotspot) => {
-    playedWhileInsideRef.current.delete(h.id);
-    setHoveredHotspotId((cur) => (cur === h.id ? null : cur));
-    if (h.id === CENTRAL_PSYCH_HOTSPOT_ID) {
-      onCentralMirrorHitLeaveRef.current();
-    }
-  }, []);
+  const onVoiceHotspotLeave = useCallback(
+    (h: MirrorVoiceHotspot) => {
+      playedWhileInsideRef.current.delete(h.id);
+      setHoveredHotspotId((cur) => (cur === h.id ? null : cur));
+      pushDebug({
+        hotspotId: h.id,
+        event: "pointer leave",
+        src: h.audioPath,
+        playResult: "—",
+        error: "",
+      });
+      if (h.id === CENTRAL_PSYCH_HOTSPOT_ID) {
+        onCentralMirrorHitLeaveRef.current();
+      }
+    },
+    [pushDebug],
+  );
+
+  const onDebugTestTap = useCallback(() => {
+    tryStartAmbientOnInteraction();
+    setHoveredHotspotId("DEBUG-TEST");
+    playedWhileInsideRef.current.delete("DEBUG-TEST");
+    playedWhileInsideRef.current.add("DEBUG-TEST");
+    void playMirrorClip("DEBUG-TEST", MIRROR_DEBUG_TEST_SRC, { skipPsych: true });
+  }, [playMirrorClip, tryStartAmbientOnInteraction]);
 
   useEffect(() => {
     visibleRef.current = visible;
+    setDebugRoomState(visible ? "visible (pointer-events on)" : "hidden (pointer-events off)");
+    logMirrorAudio("room visibility", { visible });
   }, [visible]);
+
+  useEffect(() => {
+    if (!visible || !MIRROR_AUDIO_DEBUG) return;
+    void probeAudioFile(MIRROR_DEBUG_PROBE_SRC);
+  }, [visible, probeAudioFile]);
 
   useEffect(() => {
     hoverCountRef.current = hoverCount;
@@ -201,6 +368,7 @@ export function MirrorRoom({ visible, onClose }: Props) {
       clearEngineTimers();
       playedWhileInsideRef.current.clear();
       voicePlayGenRef.current += 1;
+      voiceUnlockedRef.current = false;
       ambientStartedRef.current = false;
       hoverCountRef.current = 0;
       setHoverCount(0);
@@ -208,6 +376,9 @@ export function MirrorRoom({ visible, onClose }: Props) {
       setCurrentMessage(null);
       setIsMessageVisible(false);
       setDiscoveryAwake(false);
+      setDebugLines([]);
+      setDebugProbe("not run");
+      setDebugUnlock("locked");
       ambientRef.current?.pause();
       ambientRef.current = null;
       voiceRef.current?.pause();
@@ -241,7 +412,7 @@ export function MirrorRoom({ visible, onClose }: Props) {
         visible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
       }`}
       aria-hidden={!visible}
-      onMouseDown={() => {
+      onPointerDown={() => {
         tryStartAmbientOnInteraction();
       }}
     >
@@ -314,7 +485,7 @@ export function MirrorRoom({ visible, onClose }: Props) {
 
       <div className="mir-psych__veil-drift" aria-hidden />
 
-      <div className="mir-psych__mirror-audio-hits" aria-hidden>
+      <div className="mir-psych__mirror-audio-hits">
         {MIRROR_VOICE_HOTSPOTS.map((h) => (
           <div
             key={h.id}
@@ -333,6 +504,25 @@ export function MirrorRoom({ visible, onClose }: Props) {
             }}
           />
         ))}
+
+        {MIRROR_AUDIO_DEBUG ? (
+          <button
+            type="button"
+            className="mir-psych__voice-spot mir-psych__debug-test-spot"
+            style={{
+              left: "38%",
+              top: "42%",
+              width: "24%",
+              height: "18%",
+            }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              onDebugTestTap();
+            }}
+          >
+            DEBUG AUDIO TEST
+          </button>
+        ) : null}
       </div>
 
       {currentMessage !== null ? (
@@ -345,6 +535,38 @@ export function MirrorRoom({ visible, onClose }: Props) {
         >
           {currentMessage}
         </p>
+      ) : null}
+
+      {MIRROR_AUDIO_DEBUG ? (
+        <div className="mir-psych__audio-debug pointer-events-none absolute left-2 top-2 z-[55] max-h-[50vh] max-w-[min(92vw,22rem)] overflow-y-auto rounded border border-red-500/40 bg-black/85 p-2 font-mono text-[0.58rem] leading-snug text-red-100/90 sm:left-4 sm:top-4 sm:text-[0.62rem]">
+          <p className="mb-1 font-semibold text-red-300">MIRROR AUDIO DEBUG (temp)</p>
+          <p>room: {debugRoomState}</p>
+          <p>hotspot: {hoveredHotspotId ?? "—"}</p>
+          <p>unlock: {debugUnlock}</p>
+          <p className="break-all">probe: {debugProbe}</p>
+          <p className="mt-2 text-red-200/70">test file: {MIRROR_DEBUG_TEST_SRC}</p>
+          <ul className="mt-2 space-y-1 border-t border-red-500/20 pt-2">
+            {debugLines.length === 0 ? (
+              <li className="text-white/40">hover a mirror or tap DEBUG AUDIO TEST</li>
+            ) : (
+              debugLines.map((line, i) => (
+                <li key={`${line.at}-${i}`} className="break-all">
+                  [{line.at}] {line.hotspotId} · {line.event}
+                  <br />
+                  src: {line.src}
+                  <br />
+                  play: {line.playResult}
+                  {line.error ? (
+                    <>
+                      <br />
+                      err: {line.error}
+                    </>
+                  ) : null}
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
       ) : null}
 
       <p className="cfc-mirror-room-label pointer-events-none absolute left-1/2 top-[9%] z-30 -translate-x-1/2 text-center text-[0.6rem] uppercase tracking-[0.62em] text-cfc-bone/28 sm:top-[11%] sm:text-[0.66rem]">
