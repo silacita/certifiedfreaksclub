@@ -36,8 +36,9 @@ export function MirrorRoom({ visible, onClose }: Props) {
   }, [onClose]);
 
   const [hoveredHotspotId, setHoveredHotspotId] = useState<string | null>(null);
-  /** Per-hotspot: already fired voice once for this pointer dwell (cleared on mouse leave). */
-  const [playedWhileInside, setPlayedWhileInside] = useState<Record<string, boolean>>({});
+  /** Per-hotspot: voice already fired for current pointer dwell (cleared on leave). */
+  const playedWhileInsideRef = useRef<Set<string>>(new Set());
+  const voicePlayGenRef = useRef(0);
 
   const glowFrame = useMemo<MirrorLiftId | null>(() => {
     if (!hoveredHotspotId) return null;
@@ -74,6 +75,8 @@ export function MirrorRoom({ visible, onClose }: Props) {
       const v = new Audio();
       v.preload = "none";
       v.loop = false;
+      v.setAttribute("playsinline", "");
+      v.setAttribute("webkit-playsinline", "");
       voiceRef.current = v;
     }
     return voiceRef.current;
@@ -138,50 +141,43 @@ export function MirrorRoom({ visible, onClose }: Props) {
     });
   }, []);
 
-  const onVoiceHotspotMouseEnter = useCallback(
+  const onVoiceHotspotEnter = useCallback(
     (h: MirrorVoiceHotspot) => {
-      console.log("entered hotspot:", h.label);
       tryStartAmbientOnInteraction();
       setHoveredHotspotId(h.id);
 
-      if (playedWhileInside[h.id]) {
+      if (playedWhileInsideRef.current.has(h.id)) {
         return;
       }
+      playedWhileInsideRef.current.add(h.id);
 
       if (h.id === CENTRAL_PSYCH_HOTSPOT_ID) {
         onCentralMirrorHitEnterRef.current();
       }
 
       const v = ensureVoiceEl();
+      const gen = ++voicePlayGenRef.current;
       v.pause();
       v.currentTime = 0;
       v.loop = false;
-
-      console.log("playing:", h.audioPath);
-      setPlayedWhileInside((prev) => ({ ...prev, [h.id]: true }));
-
       v.src = h.audioPath;
+
       void v.play().catch(() => {
-        setPlayedWhileInside((prev) => ({ ...prev, [h.id]: false }));
+        if (voicePlayGenRef.current === gen) {
+          playedWhileInsideRef.current.delete(h.id);
+        }
       });
     },
-    [ensureVoiceEl, playedWhileInside, tryStartAmbientOnInteraction],
+    [ensureVoiceEl, tryStartAmbientOnInteraction],
   );
 
-  const onVoiceHotspotMouseLeave = useCallback(
-    (h: MirrorVoiceHotspot) => {
-      setPlayedWhileInside((prev) => {
-        const next = { ...prev };
-        delete next[h.id];
-        return next;
-      });
-      setHoveredHotspotId((cur) => (cur === h.id ? null : cur));
-      if (h.id === CENTRAL_PSYCH_HOTSPOT_ID) {
-        onCentralMirrorHitLeaveRef.current();
-      }
-    },
-    [],
-  );
+  const onVoiceHotspotLeave = useCallback((h: MirrorVoiceHotspot) => {
+    playedWhileInsideRef.current.delete(h.id);
+    setHoveredHotspotId((cur) => (cur === h.id ? null : cur));
+    if (h.id === CENTRAL_PSYCH_HOTSPOT_ID) {
+      onCentralMirrorHitLeaveRef.current();
+    }
+  }, []);
 
   useEffect(() => {
     visibleRef.current = visible;
@@ -203,7 +199,8 @@ export function MirrorRoom({ visible, onClose }: Props) {
     if (!visible) {
       clearDiscoveryTimers();
       clearEngineTimers();
-      setPlayedWhileInside({});
+      playedWhileInsideRef.current.clear();
+      voicePlayGenRef.current += 1;
       ambientStartedRef.current = false;
       hoverCountRef.current = 0;
       setHoverCount(0);
@@ -328,11 +325,11 @@ export function MirrorRoom({ visible, onClose }: Props) {
               width: `${h.layout.widthPct}%`,
               height: `${h.layout.heightPct}%`,
             }}
-            onMouseEnter={() => {
-              onVoiceHotspotMouseEnter(h);
+            onPointerEnter={() => {
+              onVoiceHotspotEnter(h);
             }}
-            onMouseLeave={() => {
-              onVoiceHotspotMouseLeave(h);
+            onPointerLeave={() => {
+              onVoiceHotspotLeave(h);
             }}
           />
         ))}
