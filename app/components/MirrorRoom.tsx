@@ -1,18 +1,11 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   AMBIENT_SRC,
   CENTRAL_PSYCH_HOTSPOT_ID,
-  MIRROR_AUDIO_UNLOCK_PRIME_SRC,
+  MIRROR_LISTEN_GATE_SRC,
   MIRROR_VOICE_HOTSPOTS,
   type MirrorVoiceHotspot,
 } from "../lib/mirrorRoomAudio";
@@ -31,9 +24,6 @@ const DISCOVER_START_MS = 36000;
 const DISCOVER_BRIGHTEN_MS = 22000;
 const DISCOVER_TEXT_PAUSE_MS = 1800;
 
-const SILENT_UNLOCK_SRC =
-  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
-
 function clearTimeouts(ref: { current: ReturnType<typeof setTimeout>[] }) {
   for (const t of ref.current) {
     clearTimeout(t);
@@ -50,7 +40,7 @@ export function MirrorRoom({ visible, onClose }: Props) {
   const [audioReady, setAudioReady] = useState(false);
   const playedWhileInsideRef = useRef<Set<string>>(new Set());
   const voicePlayGenRef = useRef(0);
-  const unlockPromiseRef = useRef<Promise<boolean> | null>(null);
+  const gateActivatingRef = useRef(false);
 
   const glowFrame = useMemo<MirrorLiftId | null>(() => {
     if (!hoveredHotspotId) return null;
@@ -95,51 +85,6 @@ export function MirrorRoom({ visible, onClose }: Props) {
     return voiceRef.current;
   }, []);
 
-  const ensureAudioUnlocked = useCallback(async (): Promise<boolean> => {
-    if (voiceUnlockedRef.current) {
-      setAudioReady(true);
-      return true;
-    }
-    if (unlockPromiseRef.current) {
-      return unlockPromiseRef.current;
-    }
-
-    const run = async (): Promise<boolean> => {
-      const v = ensureVoiceEl();
-      const prevVol = v.volume;
-
-      try {
-        v.pause();
-        v.volume = 0.001;
-        v.src = SILENT_UNLOCK_SRC;
-        await v.play();
-        v.pause();
-        v.currentTime = 0;
-
-        v.src = MIRROR_AUDIO_UNLOCK_PRIME_SRC;
-        v.volume = 0.02;
-        await v.play();
-        v.pause();
-        v.currentTime = 0;
-        v.removeAttribute("src");
-        v.load();
-        v.volume = prevVol;
-
-        voiceUnlockedRef.current = true;
-        setAudioReady(true);
-        return true;
-      } catch {
-        v.volume = prevVol;
-        return false;
-      }
-    };
-
-    unlockPromiseRef.current = run().finally(() => {
-      unlockPromiseRef.current = null;
-    });
-    return unlockPromiseRef.current;
-  }, [ensureVoiceEl]);
-
   const tryStartAmbient = useCallback(() => {
     if (!voiceUnlockedRef.current || ambientStartedRef.current) return;
     ambientStartedRef.current = true;
@@ -159,7 +104,7 @@ export function MirrorRoom({ visible, onClose }: Props) {
   }, []);
 
   const playMirrorClip = useCallback(
-    async (hotspotId: string, src: string) => {
+    async (hotspotId: string, src: string): Promise<boolean> => {
       const v = ensureVoiceEl();
       const gen = ++voicePlayGenRef.current;
       v.pause();
@@ -177,16 +122,17 @@ export function MirrorRoom({ visible, onClose }: Props) {
 
       try {
         await v.play();
+        if (hotspotId === CENTRAL_PSYCH_HOTSPOT_ID) {
+          onCentralMirrorHitEnterRef.current();
+        }
+        return true;
       } catch {
         if (voicePlayGenRef.current === gen) {
           playedWhileInsideRef.current.delete(hotspotId);
         }
+        return false;
       } finally {
         v.removeEventListener("error", onError);
-      }
-
-      if (hotspotId === CENTRAL_PSYCH_HOTSPOT_ID) {
-        onCentralMirrorHitEnterRef.current();
       }
     },
     [ensureVoiceEl],
@@ -235,10 +181,24 @@ export function MirrorRoom({ visible, onClose }: Props) {
   onCentralMirrorHitEnterRef.current = onCentralMirrorHitEnter;
   onCentralMirrorHitLeaveRef.current = onCentralMirrorHitLeave;
 
+  const onListenGateActivate = useCallback(async () => {
+    if (gateActivatingRef.current || voiceUnlockedRef.current) return;
+    gateActivatingRef.current = true;
+
+    const ok = await playMirrorClip("LISTEN-GATE", MIRROR_LISTEN_GATE_SRC);
+    if (ok) {
+      voiceUnlockedRef.current = true;
+      setAudioReady(true);
+      playedWhileInsideRef.current.add("L1");
+      tryStartAmbient();
+    }
+
+    gateActivatingRef.current = false;
+  }, [playMirrorClip, tryStartAmbient]);
+
   const activateVoiceHotspot = useCallback(
     async (h: MirrorVoiceHotspot) => {
-      const ok = await ensureAudioUnlocked();
-      if (!ok) return;
+      if (!voiceUnlockedRef.current) return;
 
       tryStartAmbient();
       setHoveredHotspotId(h.id);
@@ -250,18 +210,7 @@ export function MirrorRoom({ visible, onClose }: Props) {
 
       void playMirrorClip(h.id, h.audioPath);
     },
-    [ensureAudioUnlocked, playMirrorClip, tryStartAmbient],
-  );
-
-  const onListenGatePointerDown = useCallback(
-    (e: ReactPointerEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      void (async () => {
-        const ok = await ensureAudioUnlocked();
-        if (ok) tryStartAmbient();
-      })();
-    },
-    [ensureAudioUnlocked, tryStartAmbient],
+    [playMirrorClip, tryStartAmbient],
   );
 
   const onVoiceHotspotLeave = useCallback((h: MirrorVoiceHotspot) => {
@@ -295,7 +244,7 @@ export function MirrorRoom({ visible, onClose }: Props) {
       playedWhileInsideRef.current.clear();
       voicePlayGenRef.current += 1;
       voiceUnlockedRef.current = false;
-      unlockPromiseRef.current = null;
+      gateActivatingRef.current = false;
       ambientStartedRef.current = false;
       hoverCountRef.current = 0;
       setAudioReady(false);
@@ -438,9 +387,12 @@ export function MirrorRoom({ visible, onClose }: Props) {
         <button
           type="button"
           className="mir-psych__listen-gate"
-          aria-label="Touch the room to listen"
-          onPointerDown={onListenGatePointerDown}
+          aria-label="Tap to listen"
+          onClick={() => {
+            void onListenGateActivate();
+          }}
         >
+          <span className="mir-psych__listen-gate__title">tap to listen</span>
           <span className="mir-psych__listen-gate__hint">touch the room to listen</span>
         </button>
       ) : null}

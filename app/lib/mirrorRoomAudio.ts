@@ -146,5 +146,9 @@ export const MIRROR_VOICE_HOTSPOTS: readonly MirrorVoiceHotspot[] = [
 
 export const CENTRAL_PSYCH_HOTSPOT_ID = "C1";
 
-/** Primed on first tap inside the room (Safari / mobile unlock). */
-export const MIRROR_AUDIO_UNLOCK_PRIME_SRC = mirrorVoiceUrl(MIRROR_ROOM_VOICE.IT_WAS_ALWAYS_YOU_2);
+/**
+ * First audible clip when the listen gate is tapped (non–wake-up).
+ * File: `public/audio/voices/mirror-room/you-werent-looking-for-us.mp3`
+ */
+export const MIRROR_LISTEN_GATE_VOICE_FILE = MIRROR_ROOM_VOICE.YOU_WERENT_LOOKING;
+export const MIRROR_LISTEN_GATE_SRC = mirrorVoiceUrl(MIRROR_LISTEN_GATE_VOICE_FILE);
