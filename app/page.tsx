@@ -1,5 +1,5 @@
-import { FreakHotelGame } from "./components/game/FreakHotelGame";
+import { GameEntry } from "./components/game/GameEntry";
 
 export default function Home() {
-  return <FreakHotelGame />;
+  return <GameEntry />;
 }

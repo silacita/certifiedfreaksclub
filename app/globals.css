@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./corridor.css";
 @import "./game.css";
+@import "./lobby.css";
 
 @font-face {
   font-family: "Tan Buster";

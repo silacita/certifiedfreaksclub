@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const MENU_ITEMS = ["NEW GAME", "CONTINUE", "OPTIONS", "QUIT"] as const;
+const MENU_ITEMS = ["CHECK IN", "ROOMS", "GUEST BOOK", "QUIT"] as const;
 type MenuItem = (typeof MENU_ITEMS)[number];
 
 type StartScreenProps = {
@@ -14,7 +14,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
 
   const handleSelect = useCallback(
     (item: MenuItem) => {
-      if (item === "NEW GAME" || item === "CONTINUE") {
+      if (item === "CHECK IN") {
         onStart();
       }
     },
@@ -46,6 +46,10 @@ export function StartScreen({ onStart }: StartScreenProps) {
 
   return (
     <div className="fh-title-screen fh-fade-in">
+      <div className="fh-title-screen__stars" aria-hidden />
+      <div className="fh-title-screen__grain" aria-hidden />
+      <div className="fh-title-screen__glow" aria-hidden />
+
       <div className="fh-title-screen__logo">
         <div className="fh-title-border">
           <h1 className="fh-pixel-font fh-pixel-font--title fh-title-screen__title">
@@ -53,7 +57,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
           </h1>
         </div>
         <p className="fh-pixel-font fh-title-screen__subtitle">
-          A forgotten game from 2002
+          Not everyone checks out.
         </p>
       </div>
 
@@ -75,7 +79,7 @@ export function StartScreen({ onStart }: StartScreenProps) {
 
       <button
         type="button"
-        className="fh-pixel-font fh-title-screen__press-start fh-blink"
+        className="fh-pixel-font fh-title-screen__press-start fh-press-start-blink"
         onClick={onStart}
       >
         ▶ PRESS START

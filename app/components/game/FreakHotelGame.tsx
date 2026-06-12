@@ -9,24 +9,25 @@ import { StartScreen } from "./StartScreen";
 
 type GamePhase = "title" | "loading" | "lobby";
 
+const FADE_MS = 300;
+
 export function FreakHotelGame() {
   const [phase, setPhase] = useState<GamePhase>("title");
   const [fadeBlack, setFadeBlack] = useState(false);
+  const [fadeFast, setFadeFast] = useState(false);
 
   const beginGame = useCallback(() => {
+    setFadeFast(true);
     setFadeBlack(true);
     window.setTimeout(() => {
       setPhase("loading");
       setFadeBlack(false);
-    }, 1200);
+      setFadeFast(false);
+    }, FADE_MS);
   }, []);
 
   const enterLobby = useCallback(() => {
-    setFadeBlack(true);
-    window.setTimeout(() => {
-      setPhase("lobby");
-      setFadeBlack(false);
-    }, 800);
+    setPhase("lobby");
   }, []);
 
   return (
@@ -34,7 +35,7 @@ export function FreakHotelGame() {
       {phase === "title" && (
         <>
           <StartScreen onStart={beginGame} />
-          <CrtOverlay />
+          <CrtOverlay variant="title" />
         </>
       )}
 
@@ -47,7 +48,12 @@ export function FreakHotelGame() {
 
       {phase === "lobby" && <HotelLobby />}
 
-      {fadeBlack && <div className="fh-fade-overlay fh-fade-overlay--in" aria-hidden />}
+      {fadeBlack && (
+        <div
+          className={`fh-fade-overlay ${fadeFast ? "fh-fade-overlay--fast" : "fh-fade-overlay--in"}`}
+          aria-hidden
+        />
+      )}
     </div>
   );
 }
