@@ -1,0 +1,725 @@
+/* ═══ Hotel Corridor — psychological luxury hallway ═══ */
+
+html:has(.hotel-corridor) {
+  scroll-behavior: smooth;
+}
+
+.hotel-corridor {
+  --corridor-blood: #2a080c;
+  --corridor-burgundy: #3d1018;
+  --corridor-dried: #4a1418;
+  --corridor-brown-red: #1f0a0c;
+  --corridor-cream: #d4c8b8;
+  --corridor-tungsten: #c9a88a;
+  --corridor-black: #040303;
+  --corridor-vanish: #020101;
+  --corridor-persp: 720px;
+
+  position: relative;
+  min-height: 100dvh;
+  background: var(--corridor-black);
+  color: var(--corridor-cream);
+  overflow-x: hidden;
+}
+
+.hotel-corridor__stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hotel-corridor__vanishing {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  perspective: var(--corridor-persp);
+  perspective-origin: 50% 38%;
+}
+
+.hotel-corridor__vanishing-core {
+  position: absolute;
+  top: 12%;
+  bottom: 18%;
+  width: min(22%, 8rem);
+  background: radial-gradient(
+    ellipse 45% 90% at 50% 50%,
+    color-mix(in srgb, var(--corridor-dried) 22%, transparent) 0%,
+    var(--corridor-vanish) 72%
+  );
+  transform: translateZ(60px) scaleY(1.05);
+  opacity: 0.85;
+}
+
+.hotel-corridor__vanishing-rail {
+  position: absolute;
+  top: 10%;
+  bottom: 15%;
+  width: 42%;
+  opacity: 0.5;
+  background: linear-gradient(
+    180deg,
+    var(--corridor-vanish) 0%,
+    color-mix(in srgb, var(--corridor-burgundy) 25%, transparent) 35%,
+    color-mix(in srgb, var(--corridor-blood) 18%, transparent) 65%,
+    var(--corridor-vanish) 100%
+  );
+}
+
+.hotel-corridor__vanishing-rail--left {
+  left: 0;
+  transform: rotateY(18deg) scale(0.98);
+  transform-origin: 100% 50%;
+  clip-path: polygon(0 0, 100% 0, 72% 100%, 0 100%);
+}
+
+.hotel-corridor__vanishing-rail--right {
+  right: 0;
+  transform: rotateY(-18deg) scale(0.98);
+  transform-origin: 0% 50%;
+  clip-path: polygon(28% 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.hotel-corridor__camera {
+  position: absolute;
+  inset: -2%;
+  transform-origin: 50% 42%;
+  will-change: transform;
+}
+
+.hotel-corridor__scroll {
+  position: relative;
+  z-index: 2;
+}
+
+.hotel-corridor__perspective {
+  perspective: var(--corridor-persp);
+  perspective-origin: 50% 38%;
+}
+
+.hotel-corridor__track {
+  transform-style: preserve-3d;
+  transform: rotateX(7.5deg) translateZ(0);
+}
+
+.hotel-corridor__segment {
+  position: relative;
+  height: var(--segment-vh, 92vh);
+  transform-style: preserve-3d;
+}
+
+.hotel-corridor__segment-inner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 4rem) 1fr;
+  align-items: center;
+  transform-style: preserve-3d;
+  z-index: 2;
+}
+
+.hotel-corridor__side {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 55%;
+  transform-style: preserve-3d;
+}
+
+.hotel-corridor__side--left {
+  justify-content: flex-end;
+  padding-right: 0.75rem;
+}
+
+.hotel-corridor__side--right {
+  justify-content: flex-start;
+  padding-left: 0.75rem;
+}
+
+.hotel-corridor__side .hotel-corridor__wall {
+  position: absolute;
+  inset: 5% 0;
+  width: 100%;
+  z-index: 0;
+}
+
+.hotel-corridor__side .hotel-corridor__sconce {
+  z-index: 1;
+}
+
+.hotel-corridor__side .hotel-corridor__door-col {
+  position: relative;
+  z-index: 3;
+  padding: 0;
+}
+
+/* ─── Floor / ceiling / walls ─── */
+.hotel-corridor__floor {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 0;
+  height: 42%;
+  transform: rotateX(78deg) translateZ(-2px);
+  transform-origin: 50% 100%;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.5) 100%),
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--corridor-brown-red) 80%, #000) 0 3px,
+      color-mix(in srgb, var(--corridor-blood) 70%, #000) 3px 6px
+    ),
+    radial-gradient(ellipse 80% 60% at 50% 0%, var(--corridor-dried) 0%, var(--corridor-black) 72%);
+  box-shadow: inset 0 24px 80px rgba(0, 0, 0, 0.65);
+  opacity: calc(0.35 + var(--depth-fade, 0.65) * 0.65);
+}
+
+.hotel-corridor__ceiling {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 0;
+  height: 28%;
+  transform: rotateX(-72deg) translateZ(-4px);
+  transform-origin: 50% 0%;
+  background: linear-gradient(
+    180deg,
+    var(--corridor-vanish) 0%,
+    color-mix(in srgb, var(--corridor-burgundy) 35%, #000) 55%,
+    transparent 100%
+  );
+  opacity: calc(0.2 + var(--depth-fade, 0.5) * 0.45);
+}
+
+.hotel-corridor__wall {
+  position: absolute;
+  top: 8%;
+  bottom: 12%;
+  width: 46%;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 18px,
+      color-mix(in srgb, var(--corridor-dried) 12%, transparent) 18px 19px
+    ),
+    linear-gradient(
+      105deg,
+      color-mix(in srgb, var(--corridor-burgundy) 55%, #000) 0%,
+      color-mix(in srgb, var(--corridor-blood) 40%, #000) 40%,
+      color-mix(in srgb, var(--corridor-brown-red) 70%, #000) 100%
+    );
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.55);
+  opacity: calc(0.4 + var(--depth-fade, 0.7) * 0.6);
+}
+
+.hotel-corridor__wall--left {
+  transform: rotateY(16deg) translateZ(8px);
+  transform-origin: 100% 50%;
+  border-right: 1px solid color-mix(in srgb, var(--corridor-tungsten) 8%, transparent);
+}
+
+.hotel-corridor__wall--right {
+  transform: rotateY(-16deg) translateZ(8px);
+  transform-origin: 0% 50%;
+  border-left: 1px solid color-mix(in srgb, var(--corridor-tungsten) 8%, transparent);
+}
+
+.hotel-corridor__center-void {
+  position: absolute;
+  left: 50%;
+  top: 5%;
+  bottom: 8%;
+  width: min(28%, 11rem);
+  transform: translateX(-50%) translateZ(40px);
+  background: radial-gradient(
+    ellipse 55% 95% at 50% 45%,
+    color-mix(in srgb, var(--corridor-dried) 18%, transparent) 0%,
+    transparent 55%,
+    var(--corridor-vanish) 100%
+  );
+  opacity: calc(0.25 + var(--depth-fade, 0.5) * 0.55);
+}
+
+/* ─── Wall sconces ─── */
+.hotel-corridor__sconce {
+  position: absolute;
+  top: 32%;
+  width: 0.55rem;
+  height: 2.2rem;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #1a1210 0%, #0a0808 100%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--corridor-tungsten) 12%, transparent);
+}
+
+.hotel-corridor__sconce::after {
+  content: "";
+  position: absolute;
+  top: 0.35rem;
+  left: 50%;
+  width: 5rem;
+  height: 5rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, var(--corridor-tungsten) 42%, transparent) 0%,
+    color-mix(in srgb, var(--corridor-burgundy) 22%, transparent) 35%,
+    transparent 68%
+  );
+  mix-blend-mode: soft-light;
+  animation: corridor-sconce-flicker var(--flicker-dur, 7s) ease-in-out infinite;
+  animation-delay: var(--flicker-delay, 0s);
+}
+
+.hotel-corridor__sconce--left {
+  position: absolute;
+  right: 12%;
+  top: 28%;
+}
+
+.hotel-corridor__sconce--right {
+  position: absolute;
+  left: 12%;
+  top: 28%;
+}
+
+@keyframes corridor-sconce-flicker {
+  0%,
+  100% {
+    opacity: 0.72;
+    filter: brightness(1);
+  }
+  17% {
+    opacity: 0.58;
+    filter: brightness(0.88);
+  }
+  18% {
+    opacity: 0.78;
+    filter: brightness(1.05);
+  }
+  52% {
+    opacity: 0.68;
+  }
+  53% {
+    opacity: 0.82;
+  }
+  74% {
+    opacity: 0.64;
+  }
+}
+
+/* ─── Doors ─── */
+.hotel-corridor__door-col {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  transform-style: preserve-3d;
+}
+
+.hotel-corridor__door-col--left {
+  justify-content: flex-end;
+  padding-right: 1.25rem;
+}
+
+.hotel-corridor__door-col--right {
+  justify-content: flex-start;
+  padding-left: 1.25rem;
+}
+
+.hotel-corridor__door {
+  position: relative;
+  display: block;
+  width: min(100%, 7.5rem);
+  aspect-ratio: 2 / 3.35;
+  margin: 0;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  transform: translateZ(28px);
+  transform-style: preserve-3d;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.hotel-corridor__door-frame {
+  position: absolute;
+  inset: -3% -5%;
+  border: 1px solid color-mix(in srgb, var(--corridor-tungsten) 14%, transparent);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, #1a1210 90%, var(--corridor-burgundy)) 0%,
+    color-mix(in srgb, var(--corridor-brown-red) 85%, #000) 100%
+  );
+  box-shadow:
+    inset 0 0 40px rgba(0, 0, 0, 0.55),
+    0 12px 40px rgba(0, 0, 0, 0.45);
+  transition:
+    box-shadow 1.4s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 1.2s ease;
+}
+
+.hotel-corridor__door-panel {
+  position: absolute;
+  inset: 6% 8%;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--corridor-dried) 30%, #120808) 0%,
+      color-mix(in srgb, var(--corridor-blood) 50%, #000) 55%,
+      #0a0606 100%
+    );
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5);
+}
+
+.hotel-corridor__door-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 14px,
+    color-mix(in srgb, var(--corridor-burgundy) 8%, transparent) 14px 15px
+  );
+  opacity: 0.5;
+}
+
+.hotel-corridor__door-knob {
+  position: absolute;
+  top: 52%;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--corridor-tungsten), #3a2820);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--corridor-tungsten) 35%, transparent);
+}
+
+.hotel-corridor__door-col--left .hotel-corridor__door-knob {
+  right: 12%;
+}
+
+.hotel-corridor__door-col--right .hotel-corridor__door-knob {
+  left: 12%;
+}
+
+.hotel-corridor__door-number {
+  position: absolute;
+  top: 14%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  color: color-mix(in srgb, var(--corridor-cream) 72%, transparent);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8);
+}
+
+.hotel-corridor__door-glow {
+  position: absolute;
+  inset: -20%;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 55%,
+    color-mix(in srgb, var(--corridor-burgundy) 45%, transparent) 0%,
+    transparent 70%
+  );
+  transition: opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.hotel-corridor__door--hovered .hotel-corridor__door-glow,
+.hotel-corridor__door:focus-visible .hotel-corridor__door-glow {
+  opacity: 1;
+}
+
+.hotel-corridor__door--hovered .hotel-corridor__door-frame,
+.hotel-corridor__door:focus-visible .hotel-corridor__door-frame {
+  border-color: color-mix(in srgb, var(--corridor-tungsten) 38%, transparent);
+  box-shadow:
+    inset 0 0 50px color-mix(in srgb, var(--corridor-burgundy) 25%, transparent),
+    0 0 48px color-mix(in srgb, var(--corridor-dried) 35%, transparent),
+    0 16px 50px rgba(0, 0, 0, 0.5);
+}
+
+.hotel-corridor__door-meta {
+  position: absolute;
+  left: 50%;
+  bottom: -2.4rem;
+  width: max-content;
+  max-width: 9rem;
+  transform: translateX(-50%);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.hotel-corridor__door--hovered .hotel-corridor__door-meta,
+.hotel-corridor__door:focus-visible .hotel-corridor__door-meta {
+  opacity: 1;
+}
+
+.hotel-corridor__door-name {
+  display: block;
+  font-family: var(--font-playfair), serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--corridor-cream) 88%, transparent);
+}
+
+.hotel-corridor__door-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-family: var(--font-eb-garamond), Georgia, serif;
+  font-size: 0.68rem;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--corridor-cream) 48%, transparent);
+}
+
+/* ─── Plaque / header ─── */
+.hotel-corridor__plaque {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(1.5rem, 4vh, 2.75rem) 1rem 0;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+}
+
+.hotel-corridor__plaque-eyebrow {
+  font-family: var(--font-eb-garamond), Georgia, serif;
+  font-size: 0.62rem;
+  font-style: italic;
+  letter-spacing: 0.22em;
+  color: color-mix(in srgb, var(--corridor-cream) 38%, transparent);
+}
+
+.hotel-corridor__plaque-title {
+  margin-top: 0.35rem;
+  font-family: "Tan Buster", var(--font-playfair), serif;
+  font-size: clamp(0.85rem, 2.8vw, 1.15rem);
+  font-weight: 400;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--corridor-cream) 72%, transparent);
+  text-shadow: 0 4px 40px rgba(0, 0, 0, 0.8);
+}
+
+.hotel-corridor__plaque-sub {
+  margin-top: 0.5rem;
+  font-family: var(--font-playfair), serif;
+  font-size: 0.52rem;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--corridor-cream) 32%, transparent);
+}
+
+/* ─── Scroll hint ─── */
+.hotel-corridor__descend {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  z-index: 30;
+  transform: translateX(-50%);
+  font-family: var(--font-eb-garamond), Georgia, serif;
+  font-size: 0.65rem;
+  font-style: italic;
+  letter-spacing: 0.12em;
+  color: color-mix(in srgb, var(--corridor-cream) 36%, transparent);
+  animation: corridor-descend-pulse 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes corridor-descend-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateX(-50%) translateY(4px);
+  }
+}
+
+/* ─── Listen gate ─── */
+.hotel-corridor__listen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: radial-gradient(
+    ellipse 80% 70% at 50% 45%,
+    color-mix(in srgb, #000 55%, transparent) 0%,
+    color-mix(in srgb, #000 88%, transparent) 100%
+  );
+  cursor: pointer;
+  transition: opacity 1.6s ease, visibility 1.6s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hotel-corridor__listen--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.hotel-corridor__listen-label {
+  font-family: "Tan Buster", var(--font-playfair), serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--corridor-cream) 55%, transparent);
+}
+
+.hotel-corridor__listen-hint {
+  font-family: var(--font-eb-garamond), Georgia, serif;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: color-mix(in srgb, var(--corridor-cream) 34%, transparent);
+}
+
+/* ─── Atmosphere overlays (fixed) ─── */
+.corridor-atmo {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.corridor-atmo__vignette {
+  background: radial-gradient(
+    ellipse 68% 62% at 50% 42%,
+    transparent 0%,
+    transparent 38%,
+    rgba(2, 1, 1, 0.45) 72%,
+    rgba(0, 0, 0, 0.92) 100%
+  );
+}
+
+.corridor-atmo__infinity-fog {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 45%;
+  z-index: 1;
+  background: linear-gradient(
+    0deg,
+    var(--corridor-vanish) 0%,
+    color-mix(in srgb, var(--corridor-black) 90%, transparent) 55%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.corridor-atmo__top-fog {
+  position: fixed;
+  inset: 0 0 55% 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    var(--corridor-vanish) 0%,
+    transparent 42%
+  );
+  pointer-events: none;
+}
+
+.corridor-atmo__grain {
+  opacity: 0.1;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  animation: corridor-grain-drift 18s ease-in-out infinite;
+}
+
+@keyframes corridor-grain-drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(1.5%, -1%);
+  }
+}
+
+.corridor-atmo__vhs {
+  opacity: 0.04;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 2px,
+    rgba(255, 255, 255, 0.03) 2px 3px
+  );
+  mix-blend-mode: soft-light;
+}
+
+.corridor-atmo__dust span {
+  position: absolute;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--corridor-cream) 35%, transparent);
+  animation: corridor-dust var(--dur, 24s) ease-in-out infinite alternate;
+}
+
+@keyframes corridor-dust {
+  0% {
+    opacity: 0.06;
+    transform: translate(0, 0);
+  }
+  100% {
+    opacity: 0.2;
+    transform: translate(var(--dx), var(--dy));
+  }
+}
+
+.corridor-atmo__leak {
+  opacity: 0.35;
+  mix-blend-mode: soft-light;
+  background: radial-gradient(
+    ellipse 90% 50% at 50% 20%,
+    color-mix(in srgb, var(--corridor-burgundy) 30%, transparent) 0%,
+    transparent 60%
+  );
+  animation: corridor-leak 42s ease-in-out infinite;
+}
+
+@keyframes corridor-leak {
+  0%,
+  100% {
+    transform: translate(-2%, 0) scale(1);
+  }
+  50% {
+    transform: translate(3%, 2%) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corridor-atmo__grain,
+  .corridor-atmo__leak,
+  .hotel-corridor__sconce::after,
+  .hotel-corridor__descend,
+  .corridor-atmo__dust span {
+    animation: none !important;
+  }
+
+  .hotel-corridor__descend {
+    opacity: 0.5;
+  }
+}
