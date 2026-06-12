@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "./corridor.css";
+@import "./landing.css";
 @import "./game.css";
 @import "./lobby.css";
 
@@ -39,10 +39,13 @@
   --color-cfc-tarnished: #6e6560;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html,
 body {
-  overflow: hidden;
-  overscroll-behavior: none;
+  overflow-x: hidden;
 }
 
 body {

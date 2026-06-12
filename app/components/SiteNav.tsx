@@ -32,7 +32,7 @@ export function SiteNav() {
         href="/"
         className="font-[family-name:var(--font-playfair)] text-[0.6rem] uppercase tracking-[0.28em] text-cfc-off-white/45 transition-colors hover:text-cfc-off-white/78"
       >
-        Home
+        Club
       </Link>
       <Link
         href={UNHEARD_PATH}

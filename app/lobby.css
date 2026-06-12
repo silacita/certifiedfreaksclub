@@ -156,13 +156,13 @@
 
 .fh-lobby__exit-sign {
   position: absolute;
-  top: 16%;
+  top: max(16%, calc(12px + env(safe-area-inset-top)));
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
   padding: 0.35rem 1.4rem;
   font-family: var(--font-pixel), "Press Start 2P", monospace;
-  font-size: clamp(0.45rem, 1.4vw, 0.65rem);
+  font-size: clamp(0.4rem, 2.8vw, 0.65rem);
   letter-spacing: 0.28em;
   color: #f03848;
   background: rgba(12, 4, 6, 0.85);

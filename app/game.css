@@ -577,16 +577,19 @@
 .fh-dialog-box {
   flex-shrink: 0;
   margin: 0;
-  padding: 10px 14px 12px;
+  padding: 10px 14px max(12px, env(safe-area-inset-bottom));
+  padding-left: max(14px, env(safe-area-inset-left));
+  padding-right: max(14px, env(safe-area-inset-right));
   background: var(--fh-ui-bg);
   border-top: 3px solid var(--fh-ui-border);
   box-shadow: inset 0 2px 0 #0a0608;
 }
 
 .fh-dialog-box__text {
-  font-size: 8px;
+  font-size: clamp(7px, 2vw, 10px);
   color: var(--fh-text);
   min-height: 1.4em;
+  line-height: 1.65;
 }
 
 .fh-dialog-box__hint {

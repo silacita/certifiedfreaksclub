@@ -46,7 +46,7 @@ export function UnheardMessageExperience() {
   const [needsTap, setNeedsTap] = useState(false);
   const [entering, setEntering] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
-  const [manifestoIndex, setManifestoIndex] = useState(-1);
+  const [, setManifestoIndex] = useState(-1);
   const [counter, setCounter] = useState("00:00");
   const [endingVisible, setEndingVisible] = useState(false);
   const [statusLine, setStatusLine] = useState(" ");

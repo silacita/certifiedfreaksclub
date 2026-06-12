@@ -1,7 +1,14 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { EB_Garamond, Playfair_Display, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import { ClientRoot } from "./components/ClientRoot";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#050505",
+};
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -22,8 +29,16 @@ const pressStart = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
-  title: "THE FREAK HOTEL",
-  description: "A forgotten game from 2002. You were expected.",
+  title: {
+    default: "Certified Freaks Club",
+    template: "%s — Certified Freaks Club",
+  },
+  description: "A private creative collective. Editorial worlds, sound and atmosphere.",
+  openGraph: {
+    title: "Certified Freaks Club",
+    description: "private creative collective",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -34,9 +49,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${playfair.variable} ${ebGaramond.variable} ${pressStart.variable} h-full overflow-hidden`}
+      className={`${playfair.variable} ${ebGaramond.variable} ${pressStart.variable} h-full antialiased`}
     >
-      <body className="h-dvh w-full overflow-hidden bg-black">
+      <body className="min-h-dvh w-full bg-black text-cfc-off-white">
         <ClientRoot>{children}</ClientRoot>
       </body>
     </html>

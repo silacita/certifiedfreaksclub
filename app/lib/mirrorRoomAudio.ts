@@ -1,5 +1,5 @@
 /** Ambient bed (plays once per start when interaction unlocks audio — not looped). */
-export const AMBIENT_SRC = "/audio/ambient/freakquency-ambient.mp3";
+export const AMBIENT_SRC = "/audio/ambient/hotel-corridor-loop.wav";
 
 /**
  * Production-safe paths: `public/audio/voices/mirror-room/*.mp3`
