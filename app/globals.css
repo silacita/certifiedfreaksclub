@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./corridor.css";
+@import "./game.css";
 
 @font-face {
   font-family: "Tan Buster";
@@ -34,6 +36,12 @@
   --color-cfc-cream: #ddd4c8;
   --color-cfc-bone: #c9bfb2;
   --color-cfc-tarnished: #6e6560;
+}
+
+html,
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body {
@@ -1415,28 +1423,39 @@ body {
   touch-action: manipulation;
 }
 
-/* First tap unlock — invisible full-room layer until audio is primed */
+/* Listen gate — visible until first audible voice succeeds */
 .mir-psych__listen-gate {
   position: absolute;
   inset: 0;
-  z-index: 45;
+  z-index: 50;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.65rem;
   margin: 0;
   padding: 0;
   border: none;
-  background: transparent;
-  cursor: inherit;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #000 42%, transparent) 0%,
+    color-mix(in srgb, #000 28%, transparent) 100%
+  );
+  cursor: pointer;
   opacity: 1;
-  transition: opacity 1.4s ease;
+  transition: opacity 1.2s ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
-.mir-psych__listen-gate--dismissed {
-  opacity: 0;
+.mir-psych__listen-gate__title {
   pointer-events: none;
+  font-family: "Tan Buster", "Playfair Display", serif;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-cfc-off-white) 52%, transparent);
 }
 
 .mir-psych__listen-gate__hint {
@@ -1445,11 +1464,11 @@ body {
   padding: 0 1rem;
   text-align: center;
   font-family: "EB Garamond", Georgia, serif;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-style: italic;
   line-height: 1.5;
-  letter-spacing: 0.06em;
-  color: color-mix(in srgb, var(--color-cfc-off-white) 38%, transparent);
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--color-cfc-off-white) 34%, transparent);
 }
 
 /* Psychological copy — small, no chrome */

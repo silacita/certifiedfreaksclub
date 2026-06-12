@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { EB_Garamond, Playfair_Display } from "next/font/google";
+import { EB_Garamond, Playfair_Display, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import { ClientRoot } from "./components/ClientRoot";
 
@@ -15,9 +15,15 @@ const ebGaramond = EB_Garamond({
   weight: ["400", "500", "600"],
 });
 
+const pressStart = Press_Start_2P({
+  variable: "--font-pixel",
+  subsets: ["latin"],
+  weight: "400",
+});
+
 export const metadata: Metadata = {
-  title: "Certified Freaks Club",
-  description: "A cinematic entry. Luxury, dark, minimal.",
+  title: "THE FREAK HOTEL",
+  description: "A forgotten game from 2002. You were expected.",
 };
 
 export default function RootLayout({
@@ -28,9 +34,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${playfair.variable} ${ebGaramond.variable} h-full antialiased`}
+      className={`${playfair.variable} ${ebGaramond.variable} ${pressStart.variable} h-full overflow-hidden`}
     >
-      <body className="min-h-dvh bg-cfc-black text-cfc-off-white">
+      <body className="h-dvh w-full overflow-hidden bg-black">
         <ClientRoot>{children}</ClientRoot>
       </body>
     </html>
