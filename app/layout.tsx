@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { EB_Garamond, Playfair_Display, Press_Start_2P } from "next/font/google";
+import { EB_Garamond, Playfair_Display, Press_Start_2P, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { ClientRoot } from "./components/ClientRoot";
 
@@ -28,15 +28,21 @@ const pressStart = Press_Start_2P({
   weight: "400",
 });
 
+const spaceMono = Space_Mono({
+  variable: "--font-space-mono",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
 export const metadata: Metadata = {
   title: {
-    default: "Certified Freaks Club",
-    template: "%s — Certified Freaks Club",
+    default: "THE FREAKLAND",
+    template: "%s — THE FREAKLAND",
   },
-  description: "A private creative collective. Editorial worlds, sound and atmosphere.",
+  description: "Incoming transmission. Certified Freaks Club.",
   openGraph: {
-    title: "Certified Freaks Club",
-    description: "private creative collective",
+    title: "THE FREAKLAND",
+    description: "is calling...",
     type: "website",
   },
 };
@@ -49,7 +55,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${playfair.variable} ${ebGaramond.variable} ${pressStart.variable} h-full antialiased`}
+      className={`${playfair.variable} ${ebGaramond.variable} ${pressStart.variable} ${spaceMono.variable} h-full antialiased`}
     >
       <body className="min-h-dvh w-full bg-black text-cfc-off-white">
         <ClientRoot>{children}</ClientRoot>

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./freakland.css";
 @import "./landing.css";
 @import "./game.css";
 @import "./lobby.css";
@@ -51,6 +52,13 @@ body {
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+html.fl-page-lock,
+html.fl-page-lock body {
+  overflow: hidden;
+  height: 100%;
+  overscroll-behavior: none;
 }
 
 /* Hero masthead — Tan Buster only (no Playfair on title) */

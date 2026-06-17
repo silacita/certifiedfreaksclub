@@ -1,0 +1,274 @@
+/* ═══ THE FREAKLAND — incoming call installation ═══ */
+
+.fl-root {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: var(--color-cfc-off-white);
+  font-family: var(--font-space-mono), "IBM Plex Mono", ui-monospace, monospace;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.fl-root *,
+.fl-root *::before,
+.fl-root *::after {
+  box-sizing: border-box;
+}
+
+.fl-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: max(1.25rem, env(safe-area-inset-top))
+    max(1.25rem, env(safe-area-inset-right))
+    max(1.25rem, env(safe-area-inset-bottom))
+    max(1.25rem, env(safe-area-inset-left));
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1.2s ease, visibility 1.2s ease;
+}
+
+.fl-screen--active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.fl-screen--instant {
+  transition: none;
+}
+
+/* ── Incoming call window ── */
+
+.fl-call {
+  width: min(92vw, 22rem);
+  border: 1px solid color-mix(in srgb, var(--color-cfc-off-white) 28%, transparent);
+  background: #000;
+  text-align: center;
+}
+
+.fl-call__header {
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-cfc-off-white) 18%, transparent);
+  font-size: 0.58rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-cfc-off-white) 55%, transparent);
+}
+
+.fl-call__body {
+  padding: clamp(1.75rem, 6vh, 2.5rem) 1.25rem clamp(1.5rem, 5vh, 2rem);
+}
+
+.fl-call__title {
+  margin: 0;
+  font-size: clamp(1.05rem, 4.5vw, 1.35rem);
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  line-height: 1.35;
+}
+
+.fl-call__subtitle {
+  margin: 0.85rem 0 0;
+  font-size: clamp(0.72rem, 2.8vw, 0.82rem);
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--color-cfc-off-white) 72%, transparent);
+}
+
+.fl-call__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid color-mix(in srgb, var(--color-cfc-off-white) 18%, transparent);
+}
+
+.fl-call__btn {
+  margin: 0;
+  padding: 0.95rem 0.5rem;
+  border: none;
+  background: #000;
+  color: var(--color-cfc-off-white);
+  font: inherit;
+  font-size: 0.62rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  transition: background 0.6s ease, color 0.6s ease;
+}
+
+.fl-call__btn + .fl-call__btn {
+  border-left: 1px solid color-mix(in srgb, var(--color-cfc-off-white) 18%, transparent);
+}
+
+.fl-call__btn:hover,
+.fl-call__btn:focus-visible {
+  background: color-mix(in srgb, var(--color-cfc-off-white) 8%, #000);
+  outline: none;
+}
+
+.fl-call__btn:focus-visible {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cfc-off-white) 45%, transparent);
+}
+
+.fl-call__btn--decline {
+  color: color-mix(in srgb, var(--color-cfc-off-white) 62%, transparent);
+}
+
+/* ── Blackout overlay ── */
+
+.fl-blackout {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.4s ease;
+  z-index: 30;
+}
+
+.fl-blackout--visible {
+  opacity: 1;
+}
+
+/* ── Terminal loading ── */
+
+.fl-terminal {
+  width: min(92vw, 28rem);
+  font-size: clamp(0.68rem, 2.4vw, 0.78rem);
+  letter-spacing: 0.06em;
+  line-height: 1.9;
+}
+
+.fl-terminal__line {
+  margin: 0;
+  min-height: 1.9em;
+  color: color-mix(in srgb, var(--color-cfc-off-white) 78%, transparent);
+}
+
+.fl-terminal__line--dim {
+  color: color-mix(in srgb, var(--color-cfc-off-white) 42%, transparent);
+}
+
+.fl-terminal__bar {
+  margin-top: 1.75rem;
+  height: 1px;
+  width: 100%;
+  background: color-mix(in srgb, var(--color-cfc-off-white) 14%, transparent);
+  overflow: hidden;
+}
+
+.fl-terminal__bar-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--color-cfc-off-white);
+  transition: width 2.8s linear;
+}
+
+.fl-terminal__bar-fill--full {
+  width: 100%;
+}
+
+/* ── Construction reveal ── */
+
+.fl-ready {
+  width: min(92vw, 26rem);
+  text-align: center;
+}
+
+.fl-ready__title {
+  margin: 0;
+  font-size: clamp(1rem, 4.2vw, 1.28rem);
+  font-weight: 400;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  line-height: 1.45;
+}
+
+.fl-ready__body {
+  margin: clamp(1.25rem, 4vh, 1.75rem) 0 0;
+  font-size: clamp(0.68rem, 2.4vw, 0.78rem);
+  letter-spacing: 0.04em;
+  line-height: 2;
+  color: color-mix(in srgb, var(--color-cfc-off-white) 72%, transparent);
+}
+
+.fl-ready__body p {
+  margin: 0;
+}
+
+.fl-ready__footer {
+  position: absolute;
+  bottom: max(1.5rem, env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-cfc-off-white) 38%, transparent);
+}
+
+/* ── Declined / error ── */
+
+.fl-error {
+  width: min(92vw, 24rem);
+  text-align: center;
+}
+
+.fl-error__code {
+  margin: 0;
+  font-size: clamp(1.1rem, 5vw, 1.45rem);
+  letter-spacing: 0.18em;
+  line-height: 1.4;
+}
+
+.fl-error__message {
+  margin: clamp(1.25rem, 4vh, 1.75rem) 0 0;
+  font-size: clamp(0.68rem, 2.4vw, 0.78rem);
+  letter-spacing: 0.06em;
+  line-height: 2;
+  color: color-mix(in srgb, var(--color-cfc-off-white) 68%, transparent);
+}
+
+.fl-error__message p {
+  margin: 0;
+}
+
+.fl-error__retry {
+  margin-top: clamp(2rem, 6vh, 2.75rem);
+  padding: 0.75rem 1.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-cfc-off-white) 28%, transparent);
+  background: #000;
+  color: var(--color-cfc-off-white);
+  font: inherit;
+  font-size: 0.6rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  transition: background 0.6s ease;
+}
+
+.fl-error__retry:hover,
+.fl-error__retry:focus-visible {
+  background: color-mix(in srgb, var(--color-cfc-off-white) 8%, #000);
+  outline: none;
+}
+
+.fl-error__retry:focus-visible {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cfc-off-white) 45%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-screen,
+  .fl-blackout,
+  .fl-terminal__bar-fill {
+    transition: none;
+  }
+}
